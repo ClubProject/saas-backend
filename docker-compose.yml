@@ -1,0 +1,64 @@
+# Main Docker Compose file for the entire SaaS application
+# This runs both frontend and backend services
+
+version: "3.8"
+
+services:
+  # Backend Service (Django)
+  backend:
+    build:
+      context: ./BackendMentorHub
+      dockerfile: Dockerfile
+    container_name: saas-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - DJANGO_SETTINGS_MODULE=BackendMentorHub.settings
+    volumes:
+      - ./BackendMentorHub:/app
+    networks:
+      - saas-network
+    depends_on:
+      - db
+
+  # Frontend Service (React)
+  frontend:
+    build:
+      context: ../saas-Frontend
+      dockerfile: Dockerfile
+    container_name: saas-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://backend:8000/api
+    volumes:
+      - ../saas-Frontend:/app
+      - /app/node_modules
+    networks:
+      - saas-network
+    depends_on:
+      - backend
+
+  # Database Service (PostgreSQL)
+  db:
+    image: postgres:15-alpine
+    container_name: saas-db
+    environment:
+      POSTGRES_DB: mentorhub
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - saas-network
+
+volumes:
+  postgres_data:
+
+networks:
+  saas-network:
+    driver: bridge
